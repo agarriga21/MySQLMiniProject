@@ -128,7 +128,7 @@ Values ('Toy Car','Toys',1000,.25,2.25),
 
 Select * From products;
 
-drop PROCEDURE GenerateSales;
+#drop PROCEDURE GenerateSales;
 
 DELIMITER $$
 CREATE PROCEDURE GenerateSales()
@@ -200,7 +200,7 @@ DELIMITER ;
 
 Call GenerateSales();
 
-truncate table sales;
+#truncate table sales;
 
 Select * From sales;
 
