@@ -131,7 +131,10 @@ Select * From products;
 #drop PROCEDURE GenerateSales;
 
 DELIMITER $$
-CREATE PROCEDURE GenerateSales()
+CREATE PROCEDURE GenerateSales
+(
+IN num int
+)
 BEGIN
 	DECLARE lid INT;
     DECLARE cid INT;
@@ -141,13 +144,16 @@ BEGIN
     DECLARE y INT;
     DECLARE q INT;
     SET x = 1;
-   
+   IF num is null THEN
+        SET num = 1;
+        end if;
     
     insert_loop:  LOOP
-		IF  x > 10 THEN 
+		IF  x > num THEN 
+        Select (x-1) as "# of sales rows added";
 			LEAVE  insert_loop;
 		END  IF;
-		SET  x = x + 1;
+		
         SET pid = null;
         SET q = null;
         SET y = null;
@@ -157,7 +163,14 @@ BEGIN
         
         SET  pid = Round(rand()*12)+1;
         SET q =  Round(rand()*24)+1;
-        
+        #handle inventory
+        If q <= (Select inventory from products where prodid=pid)
+        THEN
+        Update products SET inventory = (inventory-q) where prodid=pid;
+        else
+        Select (x-1) as "# of sales rows added","Generation stopped due to empty inventory on product:",pid;
+			LEAVE  insert_loop;
+            END IF;
         SET  y= Round(rand());
         
          #random variable to boost San Antonio location
@@ -192,17 +205,21 @@ BEGIN
         
 INSERT INTO sales (custid,prodid,empid,locationid,quantity,purchasetime)
 VALUES (cid,pid,eid,lid,q,Now());
-		
+	SET  x = x + 1;	
 	END LOOP;
-	Select * From sales;
+	
 END$$
 DELIMITER ;
 
-Call GenerateSales();
+Call GenerateSales(10);
 
 #truncate table sales;
 
 Select * From sales;
+Select * From products;
+
+#quick inventory add
+Update products Set inventory=(inventory +200);
 
 #Detailed sales table
 Select concat(c.firstname," ",c.lastname) as "Customer Name",
