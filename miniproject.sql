@@ -1,5 +1,6 @@
 #Add a couple columns to the sales table, time stamp and quantity
 #Use alter and update commands to add the columns and update the rows
+drop database miniproject;
 
 CREATE database miniproject;
 Use miniproject;
@@ -28,8 +29,6 @@ primary key(empid),
 FOREIGN KEY (locationid) REFERENCES locations(locationid)
 );
 
-Alter Table employees
-ADD FOREIGN KEY (managerid) REFERENCES employees(empid);
 
 CREATE TABLE customers(
 custid int auto_increment,
@@ -50,7 +49,7 @@ msrp decimal(65,2) not null,
 primary key(prodid)
 );
 
-drop table sales;
+
 CREATE TABLE sales(
 ID int auto_increment,
 custid int not null,
@@ -78,6 +77,7 @@ Values ('San Antonio','TX','Earl Drive','78260','Store'),
 ('San Antonio','TX','Oak Street','78250','Office');
 
 Select * From locations;
+update locations set locationid = locationid +6;
 
 Insert into employees(firstname,lastname,email,locationid,`role`,managerid,salary)
 Values ('Jose','Gonzales','Jgonz@gmail.com',12,'CEO',null,300000),
@@ -87,7 +87,7 @@ Values ('Jose','Gonzales','Jgonz@gmail.com',12,'CEO',null,300000),
 ('Jacob','Frank','JF@yahoo.com',7,'Sales Associate',3,60000),
 ('John','Adams','jonny@aol.com',7,'Sales Associate',3,55000),
 ('Edward','Eaton','EEEE@yahoo.com',8,'Manager',2,110000),
-('Larry','Lobster','Livlarry@gmail.com',8,'Sales Associate',8,72000),
+('Larry','Lobster','Livlarry@gmail.com',8,'Sales Associate',7,72000),
 ('Hailey','Munoz','Hbomb@aol.com',9,'Manager',2,100000),
 ('Manuel','Gomez','Man@gmail.com',9,'Sales Associate',9,58000),
 ('Jessica','Kent','Jessica@yahoo.com',10,'Manager',2,130000),
@@ -95,7 +95,9 @@ Values ('Jose','Gonzales','Jgonz@gmail.com',12,'CEO',null,300000),
 
 Select * From employees;
 
-update employees set managerid=7 where empid=8;
+Alter Table employees
+ADD FOREIGN KEY (managerid) REFERENCES employees(empid);
+
 
 Insert into customers(firstname,lastname,email,phone)
 Values ('Tony','Hall','Thall@gmail.com','210-453-7874'),
@@ -144,6 +146,7 @@ BEGIN
     DECLARE y INT;
     DECLARE q INT;
     SET x = 1;
+    
    IF num is null THEN
         SET num = 1;
         end if;
@@ -171,6 +174,7 @@ BEGIN
         Select (x-1) as "# of sales rows added","Generation stopped due to empty inventory on product:",pid;
 			LEAVE  insert_loop;
             END IF;
+        
         SET  y= Round(rand());
         
          #random variable to boost San Antonio location
@@ -211,7 +215,7 @@ VALUES (cid,pid,eid,lid,q,Now());
 END$$
 DELIMITER ;
 
-Call GenerateSales(10);
+Call GenerateSales(100);
 
 #truncate table sales;
 
@@ -222,6 +226,7 @@ Select * From products;
 Update products Set inventory=(inventory +200);
 
 #Detailed sales table
+Create View Sales_Details AS
 Select concat(c.firstname," ",c.lastname) as "Customer Name",
 prodname as "Product Name",
 concat(e.firstname," ",e.lastname) as "Employee Name",
@@ -237,6 +242,8 @@ inner join employees e using(empid)
 inner join locations l ON sales.locationid = l.locationid
 Order by ((quantity*p.msrp)-(quantity*p.buyprice))
 desc;
+
+Select * From Sales_Details;
 
 #Total Sales by location
 Select
@@ -319,8 +326,8 @@ END$$
 
 
 #test
-Update employees set salary=round(salary*.05+salary,2) where `role`= "Manager";
-Update employees set salary=100000 where `role`= "Manager";
+Update employees set salary=round(salary*.05+salary,2) where `role`= "VP";
+Update employees set salary= round(salary*.03+salary,2) where `role`= "Manager";
 
 Select * From salary_audit;
 
@@ -340,4 +347,11 @@ Left join products p using(prodid)
 Inner join locations l ON e1.locationid = l.locationid
 group by e1.empid
 ORDER BY e2.empid;
+
+
+
+
+Select avg(salary) from employees;
+
+Select sum(salary) from employees group by `role`;
 
