@@ -12,6 +12,7 @@ state char(2) not null,
 address varchar(50) unique,
 zipcode int not null,
 `type` varchar(50),
+check (state IN("TX","OK","LA")),
 primary key(locationid)
 );
 
@@ -25,6 +26,7 @@ locationid int,
 `role` varchar(50) not null,
 managerid int,
 salary decimal(65,2),
+Check (salary between 0 and 1000000),
 primary key(empid),
 FOREIGN KEY (locationid) REFERENCES locations(locationid)
 );
@@ -36,6 +38,9 @@ firstname varchar(50),
 lastname varchar(50),
 email varchar(50),
 phone varchar(50),
+DOB date,
+age int,
+check (TIMESTAMPDIFF(YEAR, DOB, "2023-01-09") > 10 ),
 primary key(custid)
 );
 
@@ -46,6 +51,8 @@ prodtype varchar(50),
 inventory int not null,
 buyprice decimal(65,2) not null,
 msrp decimal(65,2) not null,
+Check (buyprice >0),
+Check (msrp >0),
 primary key(prodid)
 );
 
@@ -76,6 +83,7 @@ Values ('San Antonio','TX','Earl Drive','78260','Store'),
 ('San Antonio','TX','Elmo Street','78203','Warehouse'),
 ('San Antonio','TX','Oak Street','78250','Office');
 
+
 Select * From locations;
 update locations set locationid = locationid +6;
 
@@ -99,19 +107,25 @@ Alter Table employees
 ADD FOREIGN KEY (managerid) REFERENCES employees(empid);
 
 
-Insert into customers(firstname,lastname,email,phone)
-Values ('Tony','Hall','Thall@gmail.com','210-453-7874'),
-('Tim','Jenkins','jenkies@gmail.com','210-421-4444'),
-('Hadly','Hall','Hhall@gmail.com','210-233-9051'),
-('Guy','Goodwin','Thegoods@gmail.com','210-555-7112'),
-('Paul','Stevens','paulup@gmail.com','512-333-7321'),
-('Madelyn','Mathews','Madss@gmail.com','512-689-4024'),
-('Bob','Billy','billybobs@gmail.com','214-553-8852'),
-('Andrew','Shultz','Adnys@gmail.com','214-217-9000'),
-('Dillon','Cox','dillpickle@gmail.com','539-734-1125'),
-('Patrick','Scar','PGotscars@gmail.com','539-134-8364');
+
+Insert into customers(firstname,lastname,email,phone,DOB,age)
+Values ('Tony','Hall','Thall@gmail.com','210-453-7874',"2003-01-09",TIMESTAMPDIFF(YEAR, "2003-01-09", curdate()));
+
+Insert into customers(firstname,lastname,email,phone,DOB,age)
+Values
+('Tim','Jenkins','jenkies@gmail.com','210-421-4444',"2002-01-01",99),
+('Hadly','Hall','Hhall@gmail.com','210-233-9051',"1996-05-09",99),
+('Guy','Goodwin','Thegoods@gmail.com','210-555-7112',"2005-02-12",99),
+('Paul','Stevens','paulup@gmail.com','512-333-7321',"1993-05-05",99),
+('Madelyn','Mathews','Madss@gmail.com','512-689-4024',"1940-02-15",99),
+('Bob','Billy','billybobs@gmail.com','214-553-8852',"1991-03-09",99),
+('Andrew','Shultz','Adnys@gmail.com','214-217-9000',"1975-12-12",99),
+('Dillon','Cox','dillpickle@gmail.com','539-734-1125',"2000-12-30",99),
+('Patrick','Scar','PGotscars@gmail.com','539-134-8364',"2000-01-09",99);
 
 Select * From customers;
+
+Update customers set age = TIMESTAMPDIFF(YEAR, DOB, curdate()) where age=99;
 
 Insert into products(prodname,prodtype,inventory,buyprice,msrp)
 Values ('Toy Car','Toys',1000,.25,2.25),
@@ -215,13 +229,13 @@ VALUES (cid,pid,eid,lid,q,Now());
 END$$
 DELIMITER ;
 
-Call GenerateSales(100);
+Call GenerateSales(1000);
 
 #truncate table sales;
 
 Select * From sales;
 Select * From products;
-
+Select count(*) From sales;
 #quick inventory add
 Update products Set inventory=(inventory +200);
 
@@ -234,16 +248,27 @@ concat(city,", ",state) as "Location",
 quantity as "Quantity Purchased",
 concat('$',format(quantity*p.msrp,2)) as "Total Price",
 purchasetime as "Time of Purchase",
-concat('$',format((quantity*p.msrp)-(quantity*p.buyprice),2)) as "Store Revenue"
+concat('$',format((quantity*p.msrp)-(quantity*p.buyprice),2)) as "Store Profit"
 From sales
 inner join customers c using(custid)
 inner join products p using(prodid)
 inner join employees e using(empid)
 inner join locations l ON sales.locationid = l.locationid
-Order by ((quantity*p.msrp)-(quantity*p.buyprice))
+#Order by ((quantity*p.msrp)-(quantity*p.buyprice))
+#desc
+;
+
+Select `Total Price`,Cast(REPLACE(`Total Price`, "$", "") as DECIMAL(5,2)) AS "Decimal Price Only" From Sales_Details;
+
+Select * From Sales_Details
+order by  Cast(REPLACE(`Total Price`, "$", "") as DECIMAL(5,2))
 desc;
 
-Select * From Sales_Details;
+Select locationid,count(ID) as "Total Sales"
+From sales
+Group by sales.locationid
+Order by count(ID)
+desc;
 
 #Total Sales by location
 Select
@@ -255,10 +280,10 @@ Group by sales.locationid
 Order by count(ID)
 desc;
 
-#Total Store Revenue by location
+#Total Store Profit by location
 Select
 concat(city,", ",state) as "Location",
-concat('$',format(sum((quantity*p.msrp)-(quantity*p.buyprice)),2)) as "Total Store Revenue"
+concat('$',format(sum((quantity*p.msrp)-(quantity*p.buyprice)),2)) as "Total Store Profit"
 From sales
 inner join products p using(prodid)
 inner join locations l ON sales.locationid = l.locationid
