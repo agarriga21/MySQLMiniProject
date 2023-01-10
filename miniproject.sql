@@ -380,3 +380,64 @@ Select avg(salary) from employees;
 
 Select sum(salary) from employees group by `role`;
 
+select * from products;
+
+SELECT prodid, prodname,inventory, IF(inventory<50, "Low Inventory", "Good Inventory") as "Available Inventory" from products;
+
+SELECT prodid, prodname,inventory,
+CASE
+	WHEN inventory <0 THEN "Error" #negatives are error
+    WHEN inventory <= 10 AND inventory >= 0 THEN "Very Low" #0-10 is very low
+    WHEN inventory < 100 AND inventory >10 THEN "Low" # 11-99 is low
+    WHEN inventory < 1000 AND inventory >=100 THEN "Good" #50-9999 is good
+    ELSE "Full Inventory"
+END
+ as "Available Inventory"
+FROM products;
+
+#Custom Function using MiniProject
+
+DELIMITER $$ 
+
+CREATE FUNCTION InventoryLevel(
+	amount int
+) 
+RETURNS VARCHAR(20)
+DETERMINISTIC
+BEGIN
+    DECLARE inventoryLevel VARCHAR(20);
+
+    IF amount > 2000 THEN # 2001 - infinite
+		SET inventoryLevel = 'Too much';
+    ELSEIF (amount <= 2000 AND 
+			amount >= 1000) THEN #1000-2000
+        SET inventoryLevel = 'Top End';
+    ELSEIF (amount <1000 AND 
+			amount > 200) THEN #999 - 201
+        SET inventoryLevel = 'Good';
+         ELSEIF (amount <= 200 AND 
+			amount >= 100) THEN #100-200
+        SET inventoryLevel = 'Low';
+         ELSEIF (amount < 100 AND 
+			amount >= 0) THEN #0 - 99
+        SET inventoryLevel = 'Need more inventory';
+	ELSE
+        SET inventoryLevel = 'Error';
+    END IF;
+	-- return the inventory level
+	RETURN (inventoryLevel);
+END$$
+DELIMITER ;
+
+#see if function is in db
+SHOW FUNCTION STATUS
+WHERE db = 'miniproject';
+
+
+#Testing new function
+SELECT prodid, prodname,inventory,InventoryLevel(inventory)  as "Available Inventory" from products;
+    
+    SELECT 
+    InventoryLevel(100);
+    
+    Select quantity, InventoryLevel(quantity) from sales;
